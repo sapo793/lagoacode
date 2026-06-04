@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
 import { executarCodigo, linguagemValida, listarLinguagens } from './piston.js';
 
 const client = new Client({
@@ -36,6 +36,48 @@ client.once('ready', () => {
 client.on('messageCreate', async (msg) => {
   if (msg.author.bot) return;
   if (!canalPermitido(msg.channel)) return;
+
+  // !ajuda
+  if (msg.content.trim() === '!ajuda') {
+    const embed = new EmbedBuilder()
+      .setColor(0x2ecc40)
+      .setTitle('🐸 PantanoCode — Execute código no Discord!')
+      .setDescription('Mande seu código aqui e o pântano executa pra você em segundos.')
+      .addFields(
+        {
+          name: '📌 Como usar',
+          value: '```\n!run <linguagem>\n<seu código aqui>\n```',
+        },
+        {
+          name: '🧪 Exemplo',
+          value: '```\n!run python\nprint("Croac! 🐸")\n```',
+        },
+        {
+          name: '🌐 Linguagens suportadas',
+          value: [
+            '🐍 `python`',
+            '🟨 `javascript` / `js`',
+            '🔷 `typescript` / `ts`',
+            '☕ `java`',
+            '⚙️ `c` / `cpp`',
+            '🐹 `go`',
+            '🦀 `rust`',
+            '💎 `ruby` / `rb`',
+            '🐘 `php`',
+            '🌙 `lua`',
+            '💻 `bash` / `sh`',
+          ].join('  '),
+        },
+        {
+          name: '🧹 Limpar canal',
+          value: '`!limpar [quantidade]` — apenas o dono do pântano',
+        },
+      )
+      .setFooter({ text: 'PantanoCode • Powered by Glot.io' })
+      .setTimestamp();
+
+    return msg.channel.send({ embeds: [embed] });
+  }
 
   // !limpar [quantidade]
   if (msg.content.startsWith('!limpar')) {
