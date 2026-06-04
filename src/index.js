@@ -10,6 +10,8 @@ const client = new Client({
   ],
 });
 
+const DONO_ID = '540661055861293057';
+
 const PREFIX = '!run';
 const CANAL = process.env.CANAL_COMANDOS || 'comandos';
 
@@ -27,12 +29,37 @@ function canalPermitido(canal) {
 client.once('ready', () => {
   console.log(`🐸 PantanoCode online como ${client.user.tag}`);
   console.log(`📡 Escutando canal: #${CANAL}`);
+  console.log(`🔑 GLOT_TOKEN: ${process.env.GLOT_TOKEN ? 'carregado' : 'NÃO ENCONTRADO'}`);
   client.user.setActivity('!run <linguagem> | !run help', { type: 'WATCHING' });
 });
 
 client.on('messageCreate', async (msg) => {
   if (msg.author.bot) return;
   if (!canalPermitido(msg.channel)) return;
+
+  // !limpar [quantidade]
+  if (msg.content.startsWith('!limpar')) {
+    if (msg.author.id !== DONO_ID) {
+      return msg.reply('🐸 Só o dono do pântano pode limpar o canal!');
+    }
+
+    const partes = msg.content.split(' ');
+    const quantidade = parseInt(partes[1]) || 10;
+
+    if (quantidade < 1 || quantidade > 100) {
+      return msg.reply('🐸 Quantidade deve ser entre 1 e 100!');
+    }
+
+    try {
+      const deletadas = await msg.channel.bulkDelete(quantidade + 1, true); // +1 inclui o próprio comando
+      const aviso = await msg.channel.send(`🐸 ${deletadas.size - 1} mensagens deletadas!`);
+      setTimeout(() => aviso.delete().catch(() => {}), 3000);
+    } catch (err) {
+      msg.reply(`🐸 Erro ao limpar: \`${err.message}\``);
+    }
+    return;
+  }
+
   if (!msg.content.startsWith(PREFIX)) return;
 
   const conteudo = msg.content.slice(PREFIX.length).trim();
@@ -96,8 +123,8 @@ client.on('messageCreate', async (msg) => {
 
     await aviso.edit(resposta);
   } catch (err) {
-    console.error('Erro ao executar código:', err);
-    await aviso.edit('🐸 O pântano explodiu! Erro interno ao executar o código.');
+    console.error('Erro ao executar código:', err?.message || err);
+    await aviso.edit(`🐸 O pântano explodiu! Erro: \`${err?.message || err}\``);
   }
 });
 
