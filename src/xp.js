@@ -1,6 +1,14 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 
 const DB_PATH = './data/xp.json';
+
+function garantirPastaDB() {
+  const pasta = dirname(DB_PATH);
+  if (!existsSync(pasta)) {
+    mkdirSync(pasta, { recursive: true });
+  }
+}
 
 const NIVEIS = [
   { nome: 'Ovo',        emoji: '🥚', minXP: 0    },
@@ -20,6 +28,7 @@ function carregarDB() {
 }
 
 function salvarDB(db) {
+  garantirPastaDB();
   writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
 }
 
