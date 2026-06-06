@@ -49,26 +49,73 @@ export function getProximoNivel(xp) {
 export function getUsuario(userId) {
   const db = carregarDB();
   if (!db[userId]) {
-    db[userId] = { xp: 0, streak: 0, ultimaQuest: null, resolvedBugs: 0, helped: 0 };
+    db[userId] = { xp: 0, moedas: 0, streak: 0, ultimaQuest: null, resolvedBugs: 0, helped: 0, pets: ['normal'], petEquipado: 'normal' };
     salvarDB(db);
   }
+  // migração: garante campos novos em usuários antigos
+  if (db[userId].moedas === undefined) db[userId].moedas = 0;
+  if (!db[userId].pets) db[userId].pets = ['normal'];
+  if (!db[userId].petEquipado) db[userId].petEquipado = 'normal';
+  salvarDB(db);
   return db[userId];
+}
+
+export function adicionarMoedas(userId, quantidade) {
+  const db = carregarDB();
+  if (!db[userId]) getUsuario(userId);
+  db[userId].moedas = (db[userId].moedas || 0) + quantidade;
+  salvarDB(db);
+  return db[userId].moedas;
+}
+
+export function gastarMoedas(userId, quantidade) {
+  const db = carregarDB();
+  if (!db[userId]) getUsuario(userId);
+  if ((db[userId].moedas || 0) < quantidade) return { ok: false, motivo: 'Moedas insuficientes!' };
+  db[userId].moedas -= quantidade;
+  salvarDB(db);
+  return { ok: true, moedas: db[userId].moedas };
+}
+
+export function comprarPet(userId, petId) {
+  const db = carregarDB();
+  if (!db[userId]) getUsuario(userId);
+  if (!db[userId].pets) db[userId].pets = ['normal'];
+  if (db[userId].pets.includes(petId)) return { ok: false, motivo: 'Você já possui esse pet!' };
+  db[userId].pets.push(petId);
+  salvarDB(db);
+  return { ok: true };
+}
+
+export function equiparPet(userId, petId) {
+  const db = carregarDB();
+  if (!db[userId]) getUsuario(userId);
+  if (!db[userId].pets?.includes(petId)) return { ok: false, motivo: 'Você não possui esse pet! Compre na `!loja`.' };
+  db[userId].petEquipado = petId;
+  salvarDB(db);
+  return { ok: true };
 }
 
 export function adicionarXP(userId, quantidade, motivo = '') {
   const db = carregarDB();
-  if (!db[userId]) {
-    db[userId] = { xp: 0, streak: 0, ultimaQuest: null, resolvedBugs: 0, helped: 0 };
-  }
+  if (!db[userId]) getUsuario(userId);
 
   const nivelAntes = getNivel(db[userId].xp);
   db[userId].xp += quantidade;
+  // moedas = metade do XP ganho
+  db[userId].moedas = (db[userId].moedas || 0) + Math.floor(quantidade / 2);
   const nivelDepois = getNivel(db[userId].xp);
+
+  // desbloqueia pet lendário automaticamente ao atingir nível máximo
+  if (nivelDepois.nome === 'Sapo Lend.' && !db[userId].pets?.includes('lendario')) {
+    if (!db[userId].pets) db[userId].pets = ['normal'];
+    db[userId].pets.push('lendario');
+  }
 
   salvarDB(db);
 
   const subiu = nivelAntes.nome !== nivelDepois.nome;
-  return { xpTotal: db[userId].xp, nivelAntes, nivelDepois, subiu };
+  return { xpTotal: db[userId].xp, nivelAntes, nivelDepois, subiu, moedas: db[userId].moedas };
 }
 
 export function registrarQuestResolvida(userId) {
