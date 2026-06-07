@@ -118,6 +118,208 @@ print(celsius_para_fahrenheit(100))`,
     xpBase: 50,
     dica: 'A fórmula correta é `(c * 9/5) + 32`, não `- 32`.',
   },
+  {
+    id: 'q008',
+    nivel: 'Sapo Prog.',
+    titulo: 'Lodo de dígitos',
+    descricao: 'O sapo quer somar os dígitos de um número, mas a função tá pulando casas. Corrija para que ela retorne a soma de todos os dígitos.',
+    linguagem: 'python',
+    codigoBugado: `def soma_digitos(n):
+    soma = 0
+    while n > 0:
+        soma += n % 10
+        n = n // 100  # 🐛 bug aqui!
+    return soma
+
+print(soma_digitos(1234))`,
+    outputEsperado: '10',
+    xpBase: 80,
+    dica: 'Dividindo por `100` o sapo pula um dígito a cada volta. O certo é `n // 10`.',
+  },
+  {
+    id: 'q009',
+    nivel: 'Girino',
+    titulo: 'O maior nenúfar',
+    descricao: 'O sapo quer achar o maior número de uma lista, mas o resultado sai errado. Corrija a função.',
+    linguagem: 'python',
+    codigoBugado: `def maior(lista):
+    maior_valor = lista[0]
+    for n in lista:
+        if n > maior_valor:
+            maior_valor = n
+        else:
+            maior_valor = n  # 🐛 bug aqui!
+    return maior_valor
+
+print(maior([4, 9, 2, 7]))`,
+    outputEsperado: '9',
+    xpBase: 50,
+    dica: 'O `else` sobrescreve `maior_valor` com qualquer número, mesmo os menores. Basta remover esse `else`.',
+  },
+  {
+    id: 'q010',
+    nivel: 'Girino',
+    titulo: 'Charco dos quadrados',
+    descricao: 'O sapo quer somar os quadrados dos números de uma lista, mas a conta tá errada. Corrija a função.',
+    linguagem: 'python',
+    codigoBugado: `def soma_quadrados(lista):
+    total = 0
+    for n in lista:
+        total += n * 2  # 🐛 bug aqui!
+    return total
+
+print(soma_quadrados([1, 2, 3]))`,
+    outputEsperado: '14',
+    xpBase: 50,
+    dica: '`n * 2` apenas dobra o número. Para elevar ao quadrado em Python, use `n ** 2`.',
+  },
+  {
+    id: 'q011',
+    nivel: 'Sapo Eng.',
+    titulo: 'Pedra ou primo?',
+    descricao: 'O sapo escreveu uma função pra checar se um número é primo, mas ela sempre diz que não é. Corrija!',
+    linguagem: 'python',
+    codigoBugado: `def eh_primo(n):
+    if n < 2:
+        return False
+    for i in range(2, n):
+        if n % i == 0:
+            return False
+    return False  # 🐛 bug aqui!
+
+print(eh_primo(7))`,
+    outputEsperado: 'True',
+    xpBase: 100,
+    dica: 'Se o laço termina sem achar nenhum divisor, o número É primo — o retorno final deveria ser `True`, não `False`.',
+  },
+  {
+    id: 'q012',
+    nivel: 'Girino',
+    titulo: 'Croac em Java: somatório',
+    descricao: 'O sapo escreveu um programa em Java pra somar os elementos de um array, mas o resultado sai errado. Corrija o código.',
+    linguagem: 'java',
+    codigoBugado: `public class Main {
+    public static void main(String[] args) {
+        int[] numeros = {1, 2, 3, 4, 5};
+        int soma = 0;
+        for (int i = 1; i < numeros.length; i++) {  // 🐛 bug aqui!
+            soma += numeros[i];
+        }
+        System.out.println(soma);
+    }
+}`,
+    outputEsperado: '15',
+    xpBase: 60,
+    dica: 'O laço começa em `i = 1` e pula o primeiro elemento do array. Deveria começar em `i = 0`.',
+  },
+  {
+    id: 'q013',
+    nivel: 'Girino',
+    titulo: 'Croac em Java: par ou ímpar',
+    descricao: 'O sapo quer dizer se um número é par ou ímpar, mas o programa sempre responde a mesma coisa. Corrija o código.',
+    linguagem: 'java',
+    codigoBugado: `public class Main {
+    public static void main(String[] args) {
+        int numero = 7;
+        if (numero % 2 == 0) {
+            System.out.println("par");
+        } else {
+            System.out.println("par");  // 🐛 bug aqui!
+        }
+    }
+}`,
+    outputEsperado: 'impar',
+    xpBase: 50,
+    dica: 'O `else` deveria imprimir `"impar"`, não `"par"` de novo — senão a resposta nunca muda.',
+  },
+  {
+    id: 'q014',
+    nivel: 'Sapo Prog.',
+    titulo: 'Croac em Java: fatorial',
+    descricao: 'O sapo quer calcular o fatorial de um número em Java, mas o resultado sempre dá zero. Corrija o código.',
+    linguagem: 'java',
+    codigoBugado: `public class Main {
+    public static void main(String[] args) {
+        int n = 5;
+        int resultado = 0;  // 🐛 bug aqui!
+        for (int i = 1; i <= n; i++) {
+            resultado *= i;
+        }
+        System.out.println(resultado);
+    }
+}`,
+    outputEsperado: '120',
+    xpBase: 90,
+    dica: 'Multiplicar por zero sempre dá zero! O acumulador `resultado` deve começar em `1`, não em `0`.',
+  },
+  {
+    id: 'q015',
+    nivel: 'Sapo Prog.',
+    titulo: 'Croac em Java: o maior do brejo',
+    descricao: 'O sapo quer achar o maior número de um array em Java, mas o programa retorna o menor. Corrija o código.',
+    linguagem: 'java',
+    codigoBugado: `public class Main {
+    public static void main(String[] args) {
+        int[] numeros = {3, 7, 2, 9, 4};
+        int maior = numeros[0];
+        for (int n : numeros) {
+            if (n < maior) {  // 🐛 bug aqui!
+                maior = n;
+            }
+        }
+        System.out.println(maior);
+    }
+}`,
+    outputEsperado: '9',
+    xpBase: 90,
+    dica: 'A comparação `n < maior` guarda o menor valor encontrado. Para achar o maior, use `n > maior`.',
+  },
+  {
+    id: 'q016',
+    nivel: 'Sapo Prog.',
+    titulo: 'Croac em Java: contando vogais',
+    descricao: 'O sapo quer contar as vogais de uma palavra em Java, mas o programa conta as consoantes! Corrija o código.',
+    linguagem: 'java',
+    codigoBugado: `public class Main {
+    public static void main(String[] args) {
+        String palavra = "pantano";
+        String vogais = "aeiou";
+        int contador = 0;
+        for (int i = 0; i < palavra.length(); i++) {
+            char c = palavra.charAt(i);
+            if (vogais.indexOf(c) == -1) {  // 🐛 bug aqui!
+                contador++;
+            }
+        }
+        System.out.println(contador);
+    }
+}`,
+    outputEsperado: '3',
+    xpBase: 90,
+    dica: '`indexOf(c) == -1` é verdade quando o caractere NÃO é uma vogal. Pra contar vogais, a condição deveria ser `!= -1`.',
+  },
+  {
+    id: 'q017',
+    nivel: 'Sapo Eng.',
+    titulo: 'Croac em Java: fibonacci enroscado',
+    descricao: 'O sapo tentou calcular o n-ésimo número de Fibonacci em Java, mas a sequência não avança direito. Corrija o código.',
+    linguagem: 'java',
+    codigoBugado: `public class Main {
+    public static void main(String[] args) {
+        int n = 7;
+        int a = 0, b = 1;
+        for (int i = 0; i < n; i++) {
+            int temp = a;
+            a = b;
+            b = temp;  // 🐛 bug aqui!
+        }
+        System.out.println(a);
+    }
+}`,
+    outputEsperado: '13',
+    xpBase: 130,
+    dica: 'Ao só copiar `temp` para `b`, a sequência fica oscilando entre dois valores. O próximo termo de Fibonacci é a soma dos dois anteriores: `b = temp + b`.',
+  },
 ];
 
 let questHoje = null;

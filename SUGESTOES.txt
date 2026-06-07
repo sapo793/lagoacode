@@ -1,0 +1,62 @@
+====================================================
+  PANTANOCODE — SUGESTÕES DE IMPLEMENTAÇÃO FUTURA
+====================================================
+
+--------------------------------------------------
+🎲 DROPS E RARIDADE
+--------------------------------------------------
+- Chance de drop ao resolver quest (pet raro aparece aleatoriamente)
+- Comando !abrir para abrir um pacote/ovo com pet surpresa
+- Pets com raridade exclusiva (só drop, nunca compra)
+
+--------------------------------------------------
+📈 EVOLUÇÃO DO PET
+--------------------------------------------------
+- Pet ganha XP próprio (separado do XP do usuário)
+- Pet evolui com uso, muda de aparência/nome ao evoluir
+- Exemplo: Sapo Ninja → Mestre Ninja (nova imagem ao evoluir)
+
+--------------------------------------------------
+🏅 CONQUISTAS / BADGES
+--------------------------------------------------
+- Comando !conquistas para ver badges desbloqueadas
+- Badge automática na primeira quest resolvida
+- Badge por 7 dias de streak consecutivo
+- Badge por vencer X batalhas
+- Badge por ajudar X pessoas no canal de dúvidas
+
+--------------------------------------------------
+🎨 MAIS PETS
+--------------------------------------------------
+Pets temáticos de programação:
+- ☕ Java      — sapo segurando um café
+- 🚀 Astronauta — sapo com capacete, tema deploy
+- 🧙 Mago      — sapo com cajado e chapéu pontudo
+- 🤖 Robô      — sapo com partes metálicas
+- 🕵️ Detetive  — sapo com chapéu e lupa
+- 😴 404       — sapo dormindo / não encontrado
+- ⭐ Ouro      — sapo dourado brilhante
+
+--------------------------------------------------
+🖼️ USO DAS ILUSTRAÇÕES GRANDES
+--------------------------------------------------
+- Anúncio de level up com a ilustração grande no canal
+  (já temos: pirata, fantasma, ninja, hacker)
+- Comando !ficha já implementado com as ilustrações
+
+--------------------------------------------------
+⚔️ MELHORIAS NO SISTEMA DE BATALHA
+--------------------------------------------------
+- Sistema de ranking de batalhas separado (!rankbatalha)
+- Torneios semanais automáticos entre os membros
+- Itens consumíveis para usar na batalha (poção, escudo)
+
+--------------------------------------------------
+🌐 MELHORIAS GERAIS
+--------------------------------------------------
+- Slash commands (/) além dos comandos com !
+- Sistema de times/clãs no servidor
+- Canal de anúncios automáticos de conquistas
+- Dashboard web para ver estatísticas do servidor
+
+====================================================
