@@ -8,6 +8,7 @@ import { CARGOS, setCanalMensagemCargos, getDadosCargos, buildEmbedCargos } from
 import { getPet, listarPets } from './pets.js';
 import { getStatusPet, alimentar, treinar, calcularBatalha, podeBatalhar, getEstatisticas } from './petInteracao.js';
 import { registrarReacaoUtil, removerReacaoUtil, abrirThread, resolverThread, XP_REACAO_UTIL, XP_RESOLVER_THREAD } from './duvidas.js';
+import { getRecurso, listarAreas, RECURSOS } from './recursos.js';
 
 const client = new Client({
   intents: [
@@ -106,12 +107,58 @@ client.on('messageCreate', async (msg) => {
         { name: '📊 Status',        value: '`!status` — ver fome, humor, stats e histórico de batalhas' },
         { name: '⚔️ Batalha',       value: '`!batalha @usuario` — desafiar alguém com seu pet' },
         { name: '📖 Ficha do pet',  value: '`!ficha <pet>` — veja a lore e ilustração de cada sapo' },
+        { name: '📚 Recursos', value: '`!recursos <área>` — links e dicas de estudo por área (python, java, web-dev...)' },
         { name: '❓ Abrir dúvida', value: `\`!duvida <titulo>\` — abre uma thread de dúvida no canal de ajuda` },
         { name: '✅ Resolver',     value: `\`!resolver @usuario\` — dentro da thread, dá +${XP_RESOLVER_THREAD} XP a quem te ajudou` },
         { name: '👍 Resposta útil',value: `Reaja com ✅ em qualquer mensagem no canal de dúvidas para dar +${XP_REACAO_UTIL} XP` },
       )
       .setFooter({ text: 'PantanoCode • Resolve quests pra ganhar XP!' })
       .setTimestamp();
+    return msg.channel.send({ embeds: [embed] });
+  }
+
+  // ─── !recursos [area] ────────────────────────────────────────────────────
+  if (msg.content.startsWith('!recursos')) {
+    const area = msg.content.slice('!recursos'.length).trim();
+
+    if (!area) {
+      const lista = listarAreas()
+        .map(k => `${RECURSOS[k].emoji} \`${k}\``)
+        .join('  ');
+      const embed = new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle('📚 Material Didático — Áreas disponíveis')
+        .setDescription(`Use \`!recursos <área>\` para ver links e dicas de estudo.\n\n${lista}`)
+        .addFields({ name: '💡 Exemplos', value: '`!recursos python`  `!recursos web-dev`  `!recursos game-dev`' })
+        .setFooter({ text: 'PantanoCode • Recursos de estudo' });
+      return msg.channel.send({ embeds: [embed] });
+    }
+
+    const recurso = getRecurso(area);
+    if (!recurso) {
+      return msg.reply(`🐸 Área \`${area}\` não encontrada! Use \`!recursos\` para ver as opções.`);
+    }
+
+    const linksFormatados = recurso.links
+      .map(l => `[${l.label}](${l.url})`)
+      .join('\n');
+
+    const topicosFormatados = recurso.topicos
+      .map(t => `• ${t}`)
+      .join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(recurso.cor)
+      .setTitle(`${recurso.emoji} ${recurso.nome} — Recursos de Estudo`)
+      .setDescription(recurso.descricao)
+      .addFields(
+        { name: '📌 Tópicos essenciais', value: topicosFormatados },
+        { name: '🔗 Links importantes', value: linksFormatados },
+        { name: '💡 Dica do Pântano', value: recurso.dica },
+      )
+      .setFooter({ text: 'PantanoCode • Use !recursos para ver outras áreas' })
+      .setTimestamp();
+
     return msg.channel.send({ embeds: [embed] });
   }
 
