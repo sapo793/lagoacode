@@ -64,8 +64,6 @@ client.on('messageCreate', async (msg) => {
   if (msg.author.bot) return;
   const ehCanalCargos  = msg.channel.id === CANAL_CARGOS;
   const ehCanalDuvidas = msg.channel.id === CANAL_DUVIDAS || msg.channel.parentId === CANAL_DUVIDAS;
-  const ehCanalExtra   = msg.channel.id === '1511910863974568087';
-  if (!canalPermitido(msg.channel) && !ehCanalCargos && !ehCanalDuvidas && !ehCanalExtra) return;
 
   // ─── !ajuda ───────────────────────────────────────────────────────────────
   if (msg.content.trim() === '!ajuda') {
