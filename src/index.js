@@ -6,7 +6,7 @@ import { getQuestAtiva, validarResposta, registrarResolvedor, tempoRestante } fr
 import { iniciarScheduler, postarQuestDoDia } from './scheduler.js';
 import { CARGOS, setCanalMensagemCargos, getDadosCargos, buildEmbedCargos } from './cargos.js';
 import { getPet, listarPets } from './pets.js';
-import { getStatusPet, alimentar, treinar, calcularBatalha, calcularBatalhaYorax, podeBatalhar, getEstatisticas } from './petInteracao.js';
+import { getStatusPet, alimentar, treinar, calcularBatalha, calcularBatalhaYorax, calcularBatalhaThalMor, podeBatalhar, getEstatisticas } from './petInteracao.js';
 import { registrarReacaoUtil, removerReacaoUtil, abrirThread, resolverThread, XP_REACAO_UTIL, XP_RESOLVER_THREAD } from './duvidas.js';
 import { getRecurso, listarAreas, RECURSOS } from './recursos.js';
 
@@ -106,7 +106,7 @@ client.on('messageCreate', async (msg) => {
         { name: '💪 Treinar',       value: '`!treinar` — treina seu pet 1x por dia (+bônus batalha)' },
         { name: '📊 Status',        value: '`!status` — ver fome, humor, stats e histórico de batalhas' },
         { name: '⚔️ Batalha',       value: '`!batalha @usuario` — desafiar alguém com seu pet' },
-        { name: '🌑 Boss',          value: '`!batalha bot` — desafiar YØRAX, o Arquiteto do Vazio' },
+        { name: '🌑 Boss',          value: '`!batalha @bot` — desafiar YØRAX ou THAL\'MOR mencionando o bot' },
         { name: '📖 Ficha do pet',  value: '`!ficha <pet>` — veja a lore e ilustração de cada sapo' },
         { name: '📚 Recursos', value: '`!recursos <área>` — links e dicas de estudo por área (python, java, web-dev...)' },
         { name: '❓ Abrir dúvida', value: `\`!duvida <titulo>\` — abre uma thread de dúvida no canal de ajuda` },
@@ -529,62 +529,101 @@ client.on('messageCreate', async (msg) => {
     return msg.channel.send({ embeds: [embed] });
   }
 
-  // ─── !batalha bot (YØRAX) ────────────────────────────────────────────────
-  if (msg.content.trim() === '!batalha bot') {
-    const cooldown = podeBatalhar(msg.author.id);
-    if (!cooldown.ok) return msg.reply(`⏳ ${cooldown.motivo}`);
+  // ─── !batalha @bot (YØRAX ou THAL'MOR) ──────────────────────────────────
+  if (msg.content.startsWith('!batalha') && msg.mentions.users.size > 0) {
+    const alvo = msg.mentions.users.first();
+    const YORAX_ID   = '1508885040535179274';
+    const THALMOR_ID = '1510390483556368505';
 
-    const dadosUser = getUsuario(msg.author.id);
-    const petUser = getPet(dadosUser.petEquipado || 'normal');
+    if (!alvo.bot || (alvo.id !== YORAX_ID && alvo.id !== THALMOR_ID)) {
+      // Deixa cair para o handler de batalha normal abaixo
+    } else {
+      const cooldown = podeBatalhar(msg.author.id);
+      if (!cooldown.ok) return msg.reply(`⏳ ${cooldown.motivo}`);
 
-    const resultado = calcularBatalhaYorax({ id: msg.author.id }, petUser);
+      const dadosUser = getUsuario(msg.author.id);
+      const petUser = getPet(dadosUser.petEquipado || 'normal');
+      const { AttachmentBuilder } = await import('discord.js');
 
-    let recompensaTexto = '';
-    if (resultado.atacanteVenceu) {
-      adicionarXP(msg.author.id, 100, 'batalha_yorax');
-      adicionarMoedas(msg.author.id, 200);
-      recompensaTexto = '+100 XP / +200 🪙';
-      if (resultado.primeiraVitoria) {
-        adicionarTitulo(msg.author.id, 'Quebrador do Vazio');
+      if (alvo.id === YORAX_ID) {
+        const resultado = calcularBatalhaYorax({ id: msg.author.id }, petUser);
+
+        const anexo = new AttachmentBuilder('./assets/pets/pet_yorax.png');
+        const embedInicio = new EmbedBuilder()
+          .setColor(0x1a0030)
+          .setTitle('🌑 YØRAX, O ARQUITETO DO VAZIO')
+          .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou desafiar a Entidade!\n\n\`\`\`\n> Analisando adversário...\n> Probabilidade de vitória detectada.\n> Corrigindo erro.\n\`\`\``)
+          .setImage('attachment://pet_yorax.png')
+          .setFooter({ text: 'Calculando resultado...' });
+
+        await msg.channel.send({ embeds: [embedInicio], files: [anexo] });
+        await new Promise(r => setTimeout(r, 2000));
+
+        let recompensaTexto = '';
+        if (resultado.atacanteVenceu) {
+          adicionarXP(msg.author.id, 100, 'batalha_yorax');
+          adicionarMoedas(msg.author.id, 200);
+          recompensaTexto = '+100 XP / +200 🪙';
+          if (resultado.primeiraVitoria) adicionarTitulo(msg.author.id, 'Quebrador do Vazio');
+        }
+
+        const embedResultado = new EmbedBuilder()
+          .setColor(resultado.atacanteVenceu ? 0x2ecc40 : 0x1a0030)
+          .setTitle(resultado.atacanteVenceu ? '🏆 Você derrotou YØRAX!' : '🌑 YØRAX venceu')
+          .setDescription(`*${resultado.mensagem}*\n\n` + resultado.log.join('\n'))
+          .addFields(
+            { name: `${petUser.emoji} Seu HP`, value: `${resultado.hpA}`, inline: true },
+            { name: '🌑 HP de YØRAX',          value: `${resultado.hpY}`, inline: true },
+          );
+        if (recompensaTexto) embedResultado.addFields({ name: '🎁 Recompensa', value: recompensaTexto, inline: false });
+        if (resultado.primeiraVitoria) embedResultado.addFields({
+          name: '🌌 Título desbloqueado!',
+          value: '**"Quebrador do Vazio"** 🌌🐸\nVocê fez o impossível. YØRAX foi forçado a reconhecer sua existência.',
+          inline: false,
+        });
+        embedResultado.setFooter({ text: 'YØRAX, o Arquiteto do Vazio • Cooldown: 5 minutos' }).setTimestamp();
+        return msg.channel.send({ embeds: [embedResultado] });
+
+      } else {
+        const resultado = calcularBatalhaThalMor({ id: msg.author.id }, petUser);
+
+        const anexo = new AttachmentBuilder('./assets/ilustracoes/sapo_anciao.png');
+        const embedInicio = new EmbedBuilder()
+          .setColor(0x1a3a0a)
+          .setTitle("🌿 THAL'MOR, O GUARDIÃO DAS MEMÓRIAS PERDIDAS")
+          .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou perturbar o Primordial!\n\n*"Eu existia antes que seu nome fosse pronunciado."*`)
+          .setImage('attachment://sapo_anciao.png')
+          .setFooter({ text: 'Calculando resultado...' });
+
+        await msg.channel.send({ embeds: [embedInicio], files: [anexo] });
+        await new Promise(r => setTimeout(r, 2000));
+
+        let recompensaTexto = '';
+        if (resultado.atacanteVenceu) {
+          adicionarXP(msg.author.id, 120, 'batalha_thalmor');
+          adicionarMoedas(msg.author.id, 250);
+          recompensaTexto = '+120 XP / +250 🪙';
+          if (resultado.primeiraVitoria) adicionarTitulo(msg.author.id, 'Desperto dos Lagos');
+        }
+
+        const embedResultado = new EmbedBuilder()
+          .setColor(resultado.atacanteVenceu ? 0x2ecc40 : 0x1a3a0a)
+          .setTitle(resultado.atacanteVenceu ? "🏆 Você venceu THAL'MOR!" : "🌿 THAL'MOR venceu")
+          .setDescription(`*${resultado.mensagem}*\n\n` + resultado.log.join('\n'))
+          .addFields(
+            { name: `${petUser.emoji} Seu HP`,    value: `${resultado.hpA}`, inline: true },
+            { name: "🌿 HP de THAL'MOR",          value: `${resultado.hpT}`, inline: true },
+          );
+        if (recompensaTexto) embedResultado.addFields({ name: '🎁 Recompensa', value: recompensaTexto, inline: false });
+        if (resultado.primeiraVitoria) embedResultado.addFields({
+          name: '🌿 Título desbloqueado!',
+          value: '**"Desperto dos Lagos"** 🌿🐸\nOs lagos primordiais reconheceram sua força.',
+          inline: false,
+        });
+        embedResultado.setFooter({ text: "THAL'MOR, o Guardião das Memórias • Cooldown: 5 minutos" }).setTimestamp();
+        return msg.channel.send({ embeds: [embedResultado] });
       }
     }
-
-    const { AttachmentBuilder } = await import('discord.js');
-    const anexoYorax = new AttachmentBuilder('./assets/pets/pet_yorax.png');
-
-    const embedInicio = new EmbedBuilder()
-      .setColor(0x1a0030)
-      .setTitle('🌑 YØRAX, O ARQUITETO DO VAZIO')
-      .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou desafiar a Entidade!\n\n\`\`\`\n> Analisando adversário...\n> Probabilidade de vitória detectada.\n> Corrigindo erro.\n\`\`\``)
-      .setImage('attachment://pet_yorax.png')
-      .setFooter({ text: 'Calculando resultado...' });
-
-    await msg.channel.send({ embeds: [embedInicio], files: [anexoYorax] });
-    await new Promise(r => setTimeout(r, 2000));
-
-    const embedResultado = new EmbedBuilder()
-      .setColor(resultado.atacanteVenceu ? 0x2ecc40 : 0x1a0030)
-      .setTitle(resultado.atacanteVenceu ? '🏆 Você derrotou YØRAX!' : '🌑 YØRAX venceu')
-      .setDescription(resultado.mensagem + '\n\n' + resultado.log.join('\n'))
-      .addFields(
-        { name: `${petUser.emoji} Seu HP`, value: `${resultado.hpA}`, inline: true },
-        { name: '🌑 HP de YØRAX',          value: `${resultado.hpY}`, inline: true },
-      );
-
-    if (recompensaTexto) {
-      embedResultado.addFields({ name: '🎁 Recompensa', value: recompensaTexto, inline: false });
-    }
-
-    if (resultado.primeiraVitoria) {
-      embedResultado.addFields({
-        name: '🌌 Título desbloqueado!',
-        value: '**"Quebrador do Vazio"** 🌌🐸\nVocê fez o impossível. YØRAX foi forçado a reconhecer sua existência.',
-        inline: false,
-      });
-    }
-
-    embedResultado.setFooter({ text: 'YØRAX, o Arquiteto do Vazio • Cooldown: 5 minutos' }).setTimestamp();
-    return msg.channel.send({ embeds: [embedResultado] });
   }
 
   // ─── !batalha @usuario ────────────────────────────────────────────────────

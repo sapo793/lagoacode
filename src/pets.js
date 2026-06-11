@@ -64,6 +64,17 @@ export const PETS = {
     desbloqueio: 'Atingir o nível máximo (Sapo Lendário)',
     stats: { ataque: 22, defesa: 20, velocidade: 15 },
   },
+  thalmor: {
+    nome: "THAL'MOR",
+    emoji: '🌿',
+    raridade: '🌎 Primordial',
+    lore: 'Antes dos lagos. Antes dos rios. Antes das batalhas. Existia apenas o Silêncio. E desse silêncio surgiu um único coaxar. Esse coaxar deu origem a todos os sapos que já existiram. Dizem que todo sapo carrega um fragmento dele.',
+    preco: 0,
+    arquivo: null,
+    ilustracao: 'sapo_anciao.png',
+    desbloqueio: 'Inatingível. Ele existia antes de você.',
+    stats: { ataque: 28, defesa: 30, velocidade: 18 },
+  },
   yorax: {
     nome: 'YØRAX',
     emoji: '🌑',
