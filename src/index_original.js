@@ -1,12 +1,12 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, EmbedBuilder, Partials, ActivityType } from 'discord.js';
 import { executarCodigo, linguagemValida, listarLinguagens } from './piston.js';
-import { adicionarXP, getRanking, getUsuario, getNivel, getProximoNivel, registrarQuestResolvida, jaResolveuHoje, adicionarMoedas, gastarMoedas, comprarPet, equiparPet, adicionarTitulo } from './xp.js';
+import { adicionarXP, getRanking, getUsuario, getNivel, getProximoNivel, registrarQuestResolvida, jaResolveuHoje, adicionarMoedas, gastarMoedas, comprarPet, equiparPet } from './xp.js';
 import { getQuestAtiva, validarResposta, registrarResolvedor, tempoRestante } from './quests.js';
 import { iniciarScheduler, postarQuestDoDia } from './scheduler.js';
 import { CARGOS, setCanalMensagemCargos, getDadosCargos, buildEmbedCargos } from './cargos.js';
 import { getPet, listarPets } from './pets.js';
-import { getStatusPet, alimentar, treinar, calcularBatalha, calcularBatalhaYorax, podeBatalhar, getEstatisticas } from './petInteracao.js';
+import { getStatusPet, alimentar, treinar, calcularBatalha, podeBatalhar, getEstatisticas } from './petInteracao.js';
 import { registrarReacaoUtil, removerReacaoUtil, abrirThread, resolverThread, XP_REACAO_UTIL, XP_RESOLVER_THREAD } from './duvidas.js';
 import { getRecurso, listarAreas, RECURSOS } from './recursos.js';
 
@@ -27,7 +27,6 @@ const CANAL = process.env.CANAL_COMANDOS || 'comandos';
 const CANAL_QUEST = process.env.CANAL_QUEST || process.env.CANAL_COMANDOS || 'comandos';
 const CANAL_CARGOS   = '1511910861143543940';
 const CANAL_DUVIDAS  = '1511910922980032532';
-const CANAIS_EXTRAS  = ['1511910863974568087'];
 const LIMITE_CHARS = 1900;
 
 function truncar(texto) {
@@ -37,8 +36,7 @@ function truncar(texto) {
 
 function canalPermitido(canal) {
   return canal.name === CANAL || canal.id === CANAL ||
-         canal.name === CANAL_QUEST || canal.id === CANAL_QUEST ||
-         CANAIS_EXTRAS.includes(canal.id);
+         canal.name === CANAL_QUEST || canal.id === CANAL_QUEST;
 }
 
 function ehCanalQuest(canal) {
@@ -106,7 +104,6 @@ client.on('messageCreate', async (msg) => {
         { name: '💪 Treinar',       value: '`!treinar` — treina seu pet 1x por dia (+bônus batalha)' },
         { name: '📊 Status',        value: '`!status` — ver fome, humor, stats e histórico de batalhas' },
         { name: '⚔️ Batalha',       value: '`!batalha @usuario` — desafiar alguém com seu pet' },
-        { name: '🌑 Boss',          value: '`!batalha bot` — desafiar YØRAX, o Arquiteto do Vazio' },
         { name: '📖 Ficha do pet',  value: '`!ficha <pet>` — veja a lore e ilustração de cada sapo' },
         { name: '📚 Recursos', value: '`!recursos <área>` — links e dicas de estudo por área (python, java, web-dev...)' },
         { name: '❓ Abrir dúvida', value: `\`!duvida <titulo>\` — abre uma thread de dúvida no canal de ajuda` },
@@ -312,7 +309,7 @@ client.on('messageCreate', async (msg) => {
             '```',
             '!duvida Como usar async/await em JavaScript?',
             '```',
-            '➜ O bot vai criar uma **thread** só pra sua dúvida. Descreva o problema lá dentro com mais detalhes se precisar.',
+            '➜ O bot vai criar uma **thread** só pra sua dúvida. Descreva o problema lá dentro com mais detalhes, cole seu código, erros, etc.',
           ].join('\n'),
         },
         {
@@ -368,7 +365,7 @@ client.on('messageCreate', async (msg) => {
   // ─── !loja ────────────────────────────────────────────────────────────────
   if (msg.content.trim() === '!loja') {
     const dados = getUsuario(msg.author.id);
-    const pets = listarPets().filter(p => p.id !== 'normal' && p.id !== 'lendario' && p.id !== 'yorax');
+    const pets = listarPets().filter(p => p.id !== 'normal' && p.id !== 'lendario');
     const linhas = pets.map(p => {
       const possui = dados.pets?.includes(p.id);
       return `${p.emoji} **${p.nome}** — ${p.preco} 🪙 ${possui ? '✅ *possuído*' : ''}`;
@@ -397,7 +394,6 @@ client.on('messageCreate', async (msg) => {
     if (!pet) return msg.reply(`🐸 Pet \`${id}\` não encontrado! Use \`!loja\` pra ver as opções.`);
     if (id === 'normal') return msg.reply('🐸 Você já tem o sapo normal!');
     if (id === 'lendario') return msg.reply('🐸 O pet lendário só é desbloqueado atingindo o nível máximo!');
-    if (id === 'yorax') return msg.reply('🌑 YØRAX não pode ser comprado. Ele escolhe seus adversários.');
 
     const dados = getUsuario(msg.author.id);
     if (dados.pets?.includes(id)) return msg.reply(`🐸 Você já possui o **${pet.nome}**!`);
@@ -529,66 +525,12 @@ client.on('messageCreate', async (msg) => {
     return msg.channel.send({ embeds: [embed] });
   }
 
-  // ─── !batalha bot (YØRAX) ────────────────────────────────────────────────
-  if (msg.content.trim() === '!batalha bot') {
-    const cooldown = podeBatalhar(msg.author.id);
-    if (!cooldown.ok) return msg.reply(`⏳ ${cooldown.motivo}`);
-
-    const dadosUser = getUsuario(msg.author.id);
-    const petUser = getPet(dadosUser.petEquipado || 'normal');
-
-    const resultado = calcularBatalhaYorax({ id: msg.author.id }, petUser);
-
-    let recompensaTexto = '';
-    if (resultado.atacanteVenceu) {
-      adicionarXP(msg.author.id, 100, 'batalha_yorax');
-      adicionarMoedas(msg.author.id, 200);
-      recompensaTexto = '+100 XP / +200 🪙';
-      if (resultado.primeiraVitoria) {
-        adicionarTitulo(msg.author.id, 'Quebrador do Vazio');
-      }
-    }
-
-    const embedInicio = new EmbedBuilder()
-      .setColor(0x1a0030)
-      .setTitle('🌑 YØRAX, O ARQUITETO DO VAZIO')
-      .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou desafiar a Entidade!\n\n\`\`\`\n> Analisando adversário...\n> Probabilidade de vitória detectada.\n> Corrigindo erro.\n\`\`\``)
-      .setFooter({ text: 'Calculando resultado...' });
-
-    const msgBatalha = await msg.channel.send({ embeds: [embedInicio] });
-    await new Promise(r => setTimeout(r, 2000));
-
-    const embedResultado = new EmbedBuilder()
-      .setColor(resultado.atacanteVenceu ? 0x2ecc40 : 0x1a0030)
-      .setTitle(resultado.atacanteVenceu ? '🏆 Você derrotou YØRAX!' : '🌑 YØRAX venceu')
-      .setDescription(resultado.mensagem + '\n\n' + resultado.log.join('\n'))
-      .addFields(
-        { name: `${petUser.emoji} Seu HP`, value: `${resultado.hpA}`, inline: true },
-        { name: '🌑 HP de YØRAX',          value: `${resultado.hpY}`, inline: true },
-      );
-
-    if (recompensaTexto) {
-      embedResultado.addFields({ name: '🎁 Recompensa', value: recompensaTexto, inline: false });
-    }
-
-    if (resultado.primeiraVitoria) {
-      embedResultado.addFields({
-        name: '🌌 Título desbloqueado!',
-        value: '**"Quebrador do Vazio"** 🌌🐸\nVocê fez o impossível. YØRAX foi forçado a reconhecer sua existência.',
-        inline: false,
-      });
-    }
-
-    embedResultado.setFooter({ text: 'YØRAX, o Arquiteto do Vazio • Cooldown: 5 minutos' }).setTimestamp();
-    return msgBatalha.edit({ embeds: [embedResultado] });
-  }
-
   // ─── !batalha @usuario ────────────────────────────────────────────────────
   if (msg.content.startsWith('!batalha')) {
     const alvo = msg.mentions.users.first();
-    if (!alvo) return msg.reply('🐸 Mencione quem quer desafiar! Ex: `!batalha @usuario` ou `!batalha bot`');
+    if (!alvo) return msg.reply('🐸 Mencione quem quer desafiar! Ex: `!batalha @usuario`');
     if (alvo.id === msg.author.id) return msg.reply('🐸 Você não pode batalhar contra si mesmo!');
-    if (alvo.bot) return msg.reply('🐸 Para desafiar o bot, use `!batalha bot`!');
+    if (alvo.bot) return msg.reply('🐸 Não dá pra batalhar contra um bot!');
 
     const cooldownAtacante = podeBatalhar(msg.author.id);
     if (!cooldownAtacante.ok) return msg.reply(`🐸 ${cooldownAtacante.motivo}`);
@@ -601,6 +543,7 @@ client.on('messageCreate', async (msg) => {
     const nomeAtacante = msg.member?.displayName || msg.author.username;
     const nomeDefensor = msg.guild.members.cache.get(alvo.id)?.displayName || alvo.username;
 
+    // Anúncio da batalha
     const embedInicio = new EmbedBuilder()
       .setColor(0xe74c3c)
       .setTitle('⚔️ BATALHA DE PETS!')
@@ -615,6 +558,7 @@ client.on('messageCreate', async (msg) => {
     const msgBatalha = await msg.channel.send({ embeds: [embedInicio] });
     await new Promise(r => setTimeout(r, 2000));
 
+    // Calcula batalha
     const { atacanteVenceu, log, hpA, hpB } = calcularBatalha(
       msg.author, alvo, petAtacante, petDefensor
     );
@@ -662,7 +606,7 @@ client.on('messageCreate', async (msg) => {
       return msg.reply(`🐸 Pet \`${id}\` não encontrado! Use \`!ficha\` pra ver a lista.`);
     }
 
-    const cores = { Comum: 0x95a5a6, Incomum: 0x2ecc71, Raro: 0x3498db, Lendário: 0x9b59b6, Entidade: 0x1a0030 };
+    const cores = { Comum: 0x95a5a6, Incomum: 0x2ecc71, Raro: 0x3498db, Lendário: 0x9b59b6 };
     const cor = Object.entries(cores).find(([k]) => pet.raridade.includes(k))?.[1] || 0x2ecc40;
 
     const embed = new EmbedBuilder()
@@ -670,7 +614,7 @@ client.on('messageCreate', async (msg) => {
       .setTitle(`${pet.emoji} ${pet.nome}`)
       .addFields(
         { name: '✨ Raridade',     value: pet.raridade,     inline: true },
-        { name: '💰 Preço',        value: pet.preco > 0 ? `${pet.preco} 🪙` : 'Inatingível', inline: true },
+        { name: '💰 Preço',        value: pet.preco > 0 ? `${pet.preco} 🪙` : 'Gratuito', inline: true },
         { name: '🔓 Desbloqueio',  value: pet.desbloqueio,  inline: false },
         { name: '📜 Lore',         value: `*${pet.lore}*`,  inline: false },
       )
@@ -902,6 +846,7 @@ async function handleReacaoCargo(reaction, user, adicionar) {
   const dados = getDadosCargos();
   if (!dados.mensagemId || reaction.message.id !== dados.mensagemId) return;
 
+  // Normaliza o emoji removendo variation selectors (ex: 🗄️ → 🗄)
   const emojiNome = reaction.emoji.name?.replace(/️/g, '');
   const entrada = CARGOS.find(c => c.emoji.replace(/️/g, '') === emojiNome);
   if (!entrada) return;
@@ -942,10 +887,10 @@ async function handleReacaoDuvida(reaction, user, adicionar) {
   const msg = reaction.message.partial ? await reaction.message.fetch().catch(() => null) : reaction.message;
   if (!msg) return;
   if (msg.channel.id !== CANAL_DUVIDAS) return;
-  if (msg.author.bot) return;
+  if (msg.author.bot) return; // ignora mensagens do próprio bot
 
   if (adicionar) {
-    const { ok } = registrarReacaoUtil(msg.id, user.id, msg.author.id);
+    const { ok, motivo } = registrarReacaoUtil(msg.id, user.id, msg.author.id);
     if (!ok) return;
 
     const { subiu, nivelDepois, xpTotal } = adicionarXP(msg.author.id, XP_REACAO_UTIL);
@@ -968,6 +913,7 @@ async function handleReacaoDuvida(reaction, user, adicionar) {
     if (subiu) setTimeout(() => anunciarNivelUp(msg.channel, msg.author.id, nivelDepois), 1500);
   } else {
     removerReacaoUtil(msg.id, user.id);
+    // Não remove XP ao tirar reação (evita abuso reverso)
   }
 }
 
