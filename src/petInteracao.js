@@ -184,3 +184,114 @@ export function getEstatisticas(userId) {
     bonusTreino: dados.bonusTreino || 0,
   };
 }
+
+// ── Batalha contra YØRAX (boss) ──────────────────────────────────────────────
+
+const BOT_ID = '1508885040535179274';
+const YORAX_BASE = { ataque: 32, defesa: 26, velocidade: 30 };
+
+const YORAX_MSG_VITORIA = [
+  '```\n> Análise concluída.\n> Ameaça neutralizada.\n> Retornando ao estado de espera.\n```',
+  '```\n[LOG] Adversário derrotado.\n[LOG] YØRAX permanece invicto.\n[LOG] Aguardando próximo erro humano.\n```',
+  '```\n> Probabilidade de vitória do oponente: 0.00%\n> Resultado previsto alcançado.\n> Sistema estável.\n```',
+];
+
+const YORAX_MSG_DERROTA = [
+  '```\n[AVISO CRÍTICO]\nAnomalia detectada.\nYØRAX foi derrotado.\nRecompilando...\n```',
+  '```\n> Erro inesperado.\n> Jogador excedeu expectativa.\n> Ativando protocolo de recuperação.\n```',
+];
+
+export function calcularBatalhaYorax(atacante, petAtacante) {
+  const statusAtacante = getUsuarioPet(atacante.id);
+
+  const statsY = { ...YORAX_BASE };
+  const statsA = { ...petAtacante.stats };
+
+  statsA.ataque += statusAtacante.bonusTreino || 0;
+  statsA.defesa += Math.floor((statusAtacante.bonusTreino || 0) / 2);
+
+  const humorA = HUMOR.find(h => (statusAtacante.humor || 100) >= h.min) || HUMOR[HUMOR.length - 1];
+  statsA.ataque = Math.floor(statsA.ataque * humorA.bonus);
+
+  let hpA = 100, hpY = 100;
+  const log = [];
+  let turno = 1;
+  let erroFatalUsado = false;
+  let reescreverUsado = false;
+  let debuff = null;
+
+  while (hpA > 0 && hpY > 0 && turno <= 12) {
+    // Passiva: Aprendizado Infinito — YØRAX cresce a cada turno
+    if (turno > 1) {
+      statsY.ataque += 2;
+      statsY.defesa += 1;
+      log.push(`\`[APRENDIZADO INFINITO]\` ATK de YØRAX aumentou para **${statsY.ataque}**`);
+    }
+
+    // Expiração de debuff
+    if (debuff) {
+      debuff.turnsLeft--;
+      if (debuff.turnsLeft <= 0) {
+        statsA[debuff.stat] = debuff.original;
+        debuff = null;
+      }
+    }
+
+    // Especial: Erro Fatal 0x00 — turno 3
+    if (!erroFatalUsado && turno === 3) {
+      erroFatalUsado = true;
+      const opcoes = ['ataque', 'defesa', 'velocidade'];
+      const escolhido = opcoes[Math.floor(Math.random() * opcoes.length)];
+      const original = statsA[escolhido];
+      statsA[escolhido] = Math.floor(original * 0.5);
+      debuff = { stat: escolhido, original, turnsLeft: 3 };
+      log.push(`\`[ERRO FATAL 0x00]\` ${petAtacante.emoji} sofreu -50% em **${escolhido}** por 3 turnos!`);
+    }
+
+    // Ultimate: Reescrever Realidade — quando YØRAX fica abaixo de 30 HP
+    if (!reescreverUsado && hpY < 30 && hpY > 0) {
+      reescreverUsado = true;
+      [hpA, hpY] = [hpY, hpA];
+      log.push(`\`[REESCREVER REALIDADE]\` YØRAX inverteu o HP dos combatentes!`);
+      turno++;
+      continue;
+    }
+
+    // YØRAX sempre ataca primeiro (velocidade superior)
+    const danoY = Math.max(1, statsY.ataque - Math.floor(statsA.defesa * 0.6) + Math.floor(Math.random() * 5));
+    const danoA = Math.max(1, statsA.ataque - Math.floor(statsY.defesa * 0.6) + Math.floor(Math.random() * 5));
+
+    hpA = Math.max(0, hpA - danoY);
+    log.push(`**Turno ${turno}:** 🌑 YØRAX ataca por **${danoY}** dano! (Seu HP: ${hpA})`);
+
+    if (hpA > 0) {
+      hpY = Math.max(0, hpY - danoA);
+      log.push(`${petAtacante.emoji} revida por **${danoA}** dano! (HP de YØRAX: ${hpY})`);
+    }
+
+    turno++;
+  }
+
+  const atacanteVenceu = hpA > hpY;
+
+  const dbA = getUsuarioPet(atacante.id);
+  const dbY = getUsuarioPet(BOT_ID);
+
+  const derrotasAntes = dbY.derrotas || 0;
+  if (atacanteVenceu) {
+    dbA.vitorias = (dbA.vitorias || 0) + 1;
+    dbY.derrotas = derrotasAntes + 1;
+  } else {
+    dbY.vitorias = (dbY.vitorias || 0) + 1;
+    dbA.derrotas = (dbA.derrotas || 0) + 1;
+  }
+  dbA.ultimaBatalha = Date.now();
+  salvarUsuarioPet(atacante.id, dbA);
+  salvarUsuarioPet(BOT_ID, dbY);
+
+  const primeiraVitoria = atacanteVenceu && derrotasAntes === 0;
+  const msgs = atacanteVenceu ? YORAX_MSG_DERROTA : YORAX_MSG_VITORIA;
+  const mensagem = msgs[Math.floor(Math.random() * msgs.length)];
+
+  return { atacanteVenceu, log: log.slice(0, 8), hpA, hpY, primeiraVitoria, mensagem };
+}

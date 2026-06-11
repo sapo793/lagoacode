@@ -64,6 +64,17 @@ export const PETS = {
     desbloqueio: 'Atingir o nível máximo (Sapo Lendário)',
     stats: { ataque: 22, defesa: 20, velocidade: 15 },
   },
+  yorax: {
+    nome: 'YØRAX',
+    emoji: '🌑',
+    raridade: '🌌 Entidade',
+    lore: 'Criado a partir dos fragmentos de todos os sapos derrotados. Observa cada batalha e aprende com cada jogador. Ninguém sabe seu nível verdadeiro.',
+    preco: 0,
+    arquivo: 'pet_yorax.png',
+    ilustracao: 'banner_yorax.png',
+    desbloqueio: 'Inatingível. Ele escolhe seus adversários.',
+    stats: { ataque: 32, defesa: 26, velocidade: 30 },
+  },
 };
 
 export function getPet(id) {

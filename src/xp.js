@@ -147,6 +147,16 @@ export function jaResolveuHoje(userId) {
   return db[userId].ultimaQuest === new Date().toDateString();
 }
 
+export function adicionarTitulo(userId, titulo) {
+  const db = carregarDB();
+  if (!db[userId]) getUsuario(userId);
+  if (!db[userId].titulos) db[userId].titulos = [];
+  if (db[userId].titulos.includes(titulo)) return false;
+  db[userId].titulos.push(titulo);
+  salvarDB(db);
+  return true;
+}
+
 export function getRanking(top = 10) {
   const db = carregarDB();
   return Object.entries(db)
