@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { getFalaInicio } from './bossFalas.js';
 
 const ARQUIVO = './data/petInteracao.json';
 
@@ -204,6 +205,13 @@ const THALMOR_MSG_DERROTA = [
 
 export function calcularBatalhaThalMor(atacante, petAtacante) {
   const statusAtacante = getUsuarioPet(atacante.id);
+  const petId = petAtacante.id || 'normal';
+  const historico = {
+    vitorias: statusAtacante.vitoriasThalmor || 0,
+    derrotas: statusAtacante.derrotasThalmor || 0,
+    ultimaResultado: statusAtacante.ultimaResultadoThalmor,
+  };
+  const falaInicio = getFalaInicio('thalmor', petId, historico);
 
   const statsT = { ...THALMOR_BASE };
   const statsA = { ...petAtacante.stats };
@@ -296,10 +304,13 @@ export function calcularBatalhaThalMor(atacante, petAtacante) {
   const derrotasAntes = dbT.derrotas || 0;
   if (atacanteVenceu) {
     dbA.vitorias = (dbA.vitorias || 0) + 1;
+    dbA.vitoriasThalmor = (dbA.vitoriasThalmor || 0) + 1;
+    dbA.ultimaResultadoThalmor = 'vitoria';
     dbT.derrotas = derrotasAntes + 1;
   } else {
     dbT.vitorias = (dbT.vitorias || 0) + 1;
     dbA.derrotas = (dbA.derrotas || 0) + 1;
+    dbA.ultimaResultadoThalmor = 'derrota';
   }
   dbA.ultimaBatalha = Date.now();
   salvarUsuarioPet(atacante.id, dbA);
@@ -309,7 +320,7 @@ export function calcularBatalhaThalMor(atacante, petAtacante) {
   const msgs = atacanteVenceu ? THALMOR_MSG_DERROTA : THALMOR_MSG_VITORIA;
   const mensagem = msgs[Math.floor(Math.random() * msgs.length)];
 
-  return { atacanteVenceu, log: log.slice(0, 8), hpA, hpT, primeiraVitoria, mensagem };
+  return { atacanteVenceu, log: log.slice(0, 8), hpA, hpT, primeiraVitoria, mensagem, falaInicio };
 }
 
 // ── Batalha contra YØRAX (boss) ──────────────────────────────────────────────
@@ -330,6 +341,13 @@ const YORAX_MSG_DERROTA = [
 
 export function calcularBatalhaYorax(atacante, petAtacante) {
   const statusAtacante = getUsuarioPet(atacante.id);
+  const petId = petAtacante.id || 'normal';
+  const historico = {
+    vitorias: statusAtacante.vitoriasYorax || 0,
+    derrotas: statusAtacante.derrotasYorax || 0,
+    ultimaResultado: statusAtacante.ultimaResultadoYorax,
+  };
+  const falaInicio = getFalaInicio('yorax', petId, historico);
 
   const statsY = { ...YORAX_BASE };
   const statsA = { ...petAtacante.stats };
@@ -407,10 +425,13 @@ export function calcularBatalhaYorax(atacante, petAtacante) {
   const derrotasAntes = dbY.derrotas || 0;
   if (atacanteVenceu) {
     dbA.vitorias = (dbA.vitorias || 0) + 1;
+    dbA.vitoriasYorax = (dbA.vitoriasYorax || 0) + 1;
+    dbA.ultimaResultadoYorax = 'vitoria';
     dbY.derrotas = derrotasAntes + 1;
   } else {
     dbY.vitorias = (dbY.vitorias || 0) + 1;
     dbA.derrotas = (dbA.derrotas || 0) + 1;
+    dbA.ultimaResultadoYorax = 'derrota';
   }
   dbA.ultimaBatalha = Date.now();
   salvarUsuarioPet(atacante.id, dbA);
@@ -420,5 +441,5 @@ export function calcularBatalhaYorax(atacante, petAtacante) {
   const msgs = atacanteVenceu ? YORAX_MSG_DERROTA : YORAX_MSG_VITORIA;
   const mensagem = msgs[Math.floor(Math.random() * msgs.length)];
 
-  return { atacanteVenceu, log: log.slice(0, 8), hpA, hpY, primeiraVitoria, mensagem };
+  return { atacanteVenceu, log: log.slice(0, 8), hpA, hpY, primeiraVitoria, mensagem, falaInicio };
 }

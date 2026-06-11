@@ -9,6 +9,7 @@ import { getPet, listarPets } from './pets.js';
 import { getStatusPet, alimentar, treinar, calcularBatalha, calcularBatalhaYorax, calcularBatalhaThalMor, podeBatalhar, getEstatisticas } from './petInteracao.js';
 import { registrarReacaoUtil, removerReacaoUtil, abrirThread, resolverThread, XP_REACAO_UTIL, XP_RESOLVER_THREAD } from './duvidas.js';
 import { getRecurso, listarAreas, RECURSOS } from './recursos.js';
+import { getProvocacao } from './bossFalas.js';
 
 const client = new Client({
   intents: [
@@ -60,6 +61,24 @@ client.once('ready', () => {
   console.log(`🎯 Canal de quests:   #${CANAL_QUEST}`);
   client.user.setActivity('!run <linguagem> | !quest | !rank', { type: ActivityType.Watching });
   iniciarScheduler(client);
+
+  const agendarProvocacao = () => {
+    // Entre 1h30 e 3h entre provocações
+    const delay = (90 + Math.floor(Math.random() * 90)) * 60 * 1000;
+    setTimeout(async () => {
+      try {
+        const canal = client.channels.cache.get(process.env.CANAL_COMANDOS);
+        if (!canal) return;
+        const boss = Math.random() < 0.5 ? 'yorax' : 'thalmor';
+        const fala = getProvocacao(boss);
+        const emoji = boss === 'yorax' ? '🌑' : '🌿';
+        const nome  = boss === 'yorax' ? 'YØRAX' : "THAL'MOR";
+        await canal.send(`${emoji} **${nome}:** *"${fala}"*`);
+      } catch { /* silencioso */ }
+      agendarProvocacao();
+    }, delay);
+  };
+  agendarProvocacao();
 });
 
 client.on('messageCreate', async (msg) => {
@@ -542,7 +561,8 @@ client.on('messageCreate', async (msg) => {
       if (!cooldown.ok) return msg.reply(`⏳ ${cooldown.motivo}`);
 
       const dadosUser = getUsuario(msg.author.id);
-      const petUser = getPet(dadosUser.petEquipado || 'normal');
+      const petEquipadoId = dadosUser.petEquipado || 'normal';
+      const petUser = { ...getPet(petEquipadoId), id: petEquipadoId };
       const { AttachmentBuilder } = await import('discord.js');
 
       if (alvo.id === YORAX_ID) {
@@ -552,7 +572,7 @@ client.on('messageCreate', async (msg) => {
         const embedInicio = new EmbedBuilder()
           .setColor(0x1a0030)
           .setTitle('🌑 YØRAX, O ARQUITETO DO VAZIO')
-          .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou desafiar a Entidade!\n\n\`\`\`\n> Analisando adversário...\n> Probabilidade de vitória detectada.\n> Corrigindo erro.\n\`\`\``)
+          .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou desafiar a Entidade!\n\n*"${resultado.falaInicio}"*`)
           .setImage('attachment://pet_yorax.png')
           .setFooter({ text: 'Calculando resultado...' });
 
@@ -591,7 +611,7 @@ client.on('messageCreate', async (msg) => {
         const embedInicio = new EmbedBuilder()
           .setColor(0x1a3a0a)
           .setTitle("🌿 THAL'MOR, O GUARDIÃO DAS MEMÓRIAS PERDIDAS")
-          .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou perturbar o Primordial!\n\n*"Eu existia antes que seu nome fosse pronunciado."*`)
+          .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou perturbar o Primordial!\n\n*"${resultado.falaInicio}"*`)
           .setImage('attachment://sapo_anciao.png')
           .setFooter({ text: 'Calculando resultado...' });
 
