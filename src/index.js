@@ -587,7 +587,7 @@ client.on('messageCreate', async (msg) => {
       } else {
         const resultado = calcularBatalhaThalMor({ id: msg.author.id }, petUser);
 
-        const anexo = new AttachmentBuilder('./assets/ilustracoes/sapo_anciao.png');
+        const anexo = new AttachmentBuilder('./assets/pets/sapo_anciao.png');
         const embedInicio = new EmbedBuilder()
           .setColor(0x1a3a0a)
           .setTitle("🌿 THAL'MOR, O GUARDIÃO DAS MEMÓRIAS PERDIDAS")

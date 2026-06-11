@@ -70,7 +70,7 @@ export const PETS = {
     raridade: '🌎 Primordial',
     lore: 'Antes dos lagos. Antes dos rios. Antes das batalhas. Existia apenas o Silêncio. E desse silêncio surgiu um único coaxar. Esse coaxar deu origem a todos os sapos que já existiram. Dizem que todo sapo carrega um fragmento dele.',
     preco: 0,
-    arquivo: null,
+    arquivo: 'sapo_anciao.png',
     ilustracao: 'sapo_anciao.png',
     desbloqueio: 'Inatingível. Ele existia antes de você.',
     stats: { ataque: 28, defesa: 30, velocidade: 18 },
