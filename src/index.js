@@ -549,13 +549,17 @@ client.on('messageCreate', async (msg) => {
       }
     }
 
+    const { AttachmentBuilder } = await import('discord.js');
+    const anexoYorax = new AttachmentBuilder('./assets/pets/pet_yorax.png');
+
     const embedInicio = new EmbedBuilder()
       .setColor(0x1a0030)
       .setTitle('🌑 YØRAX, O ARQUITETO DO VAZIO')
       .setDescription(`**${msg.member?.displayName || msg.author.username}** (${petUser.emoji} ${petUser.nome}) ousou desafiar a Entidade!\n\n\`\`\`\n> Analisando adversário...\n> Probabilidade de vitória detectada.\n> Corrigindo erro.\n\`\`\``)
+      .setImage('attachment://pet_yorax.png')
       .setFooter({ text: 'Calculando resultado...' });
 
-    const msgBatalha = await msg.channel.send({ embeds: [embedInicio] });
+    await msg.channel.send({ embeds: [embedInicio], files: [anexoYorax] });
     await new Promise(r => setTimeout(r, 2000));
 
     const embedResultado = new EmbedBuilder()
@@ -580,7 +584,7 @@ client.on('messageCreate', async (msg) => {
     }
 
     embedResultado.setFooter({ text: 'YØRAX, o Arquiteto do Vazio • Cooldown: 5 minutos' }).setTimestamp();
-    return msgBatalha.edit({ embeds: [embedResultado] });
+    return msg.channel.send({ embeds: [embedResultado] });
   }
 
   // ─── !batalha @usuario ────────────────────────────────────────────────────
